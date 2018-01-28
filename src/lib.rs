@@ -28,15 +28,22 @@ impl PostgresMiddleware {
   /// ```
   ///
   /// Returns `Err(err)` if there are any errors connecting to the postgresql database.
-  pub fn new(pg_connection_str: &str) -> Result<PostgresMiddleware, Box<Error>> {
-    let config = r2d2::Config::builder()
+    pub fn new(pg_connection_str: &str) -> Result<PostgresMiddleware, Box<Error>> {
+        let manager = try!(PostgresConnectionManager::new(pg_connection_str, TlsMode::None));
+        
+        let pool = Arc::new(
+            r2d2::Pool::builder()
+                .error_handler(Box::new(r2d2::LoggingErrorHandler))
+                .build(manager)?
+        );
+      /*
+      let config = r2d2::Config::builder()
         .error_handler(Box::new(r2d2::LoggingErrorHandler))
         .build();
-    let manager = try!(PostgresConnectionManager::new(pg_connection_str, TlsMode::None));
-    let pool = Arc::new(try!(r2d2::Pool::new(config, manager)));
-    Ok(PostgresMiddleware {
-      pool: pool,
-    })
+      */
+      Ok(PostgresMiddleware {
+        pool: pool,
+      })
   }
 }
 
